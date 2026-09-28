@@ -1,0 +1,78 @@
+import { Account } from '../../../accounts/domain/entities/account.entity';
+import type { AccountRepositoryPort } from '../../../accounts/application/ports/account-repository.port';
+import { Movement } from '../../domain/entities/movement.entity';
+import type { MovementRepositoryPort } from '../ports/movement-repository.port';
+import { AccountNotFoundError, DepositUseCase } from './deposit.use-case';
+
+class InMemoryAccountRepository implements AccountRepositoryPort {
+  constructor(private readonly accounts: Account[] = []) {}
+
+  async save(account: Account): Promise<void> {
+    this.accounts.push(account);
+  }
+
+  async findById(id: string): Promise<Account | null> {
+    return this.accounts.find((a) => a.id === id) ?? null;
+  }
+}
+
+class InMemoryMovementRepository implements MovementRepositoryPort {
+  public readonly saved: Movement[] = [];
+
+  async save(movement: Movement): Promise<void> {
+    this.saved.push(movement);
+  }
+}
+
+describe('DepositUseCase', () => {
+  it('crea un movimiento CREDIT para una cuenta existente', async () => {
+    const account = Account.create({
+      id: 'acc-1',
+      ownerRef: 'user-123',
+      currency: 'USD',
+    });
+    const useCase = new DepositUseCase(
+      new InMemoryAccountRepository([account]),
+      new InMemoryMovementRepository(),
+    );
+
+    const result = await useCase.execute({ accountId: 'acc-1', amount: 1500 });
+
+    expect(result.type).toBe('CREDIT');
+    expect(result.amount).toBe(1500);
+    expect(result.accountId).toBe('acc-1');
+  });
+
+  it('rechaza depositar en una cuenta inexistente', async () => {
+    const useCase = new DepositUseCase(
+      new InMemoryAccountRepository([]),
+      new InMemoryMovementRepository(),
+    );
+
+    await expect(
+      useCase.execute({ accountId: 'no-existe', amount: 1000 }),
+    ).rejects.toThrow(AccountNotFoundError);
+  });
+
+  it('rechaza montos no enteros o no positivos', async () => {
+    const account = Account.create({
+      id: 'acc-1',
+      ownerRef: 'user-123',
+      currency: 'USD',
+    });
+    const useCase = new DepositUseCase(
+      new InMemoryAccountRepository([account]),
+      new InMemoryMovementRepository(),
+    );
+
+    await expect(
+      useCase.execute({ accountId: 'acc-1', amount: 10.5 }),
+    ).rejects.toThrow();
+    await expect(
+      useCase.execute({ accountId: 'acc-1', amount: -5 }),
+    ).rejects.toThrow();
+    await expect(
+      useCase.execute({ accountId: 'acc-1', amount: 0 }),
+    ).rejects.toThrow();
+  });
+});

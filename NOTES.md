@@ -25,6 +25,27 @@
   como export en runtime, solo como tipo).
 - TypeORM requiere pg como driver de PostgreSQL; instalarlo explícitamente (npm install pg)
 
+## Migraciones (TypeORM) — agregados
+
+- Cada entidad ORM nueva hay que registrarla a mano en
+  `src/config/typeorm.config.ts` (`entities: [...]`). Si no, el CLI
+  responde "No changes in database schema were found" y la app falla
+  al bootear con `forFeature([...])`. Se eligió lista explícita en vez
+  de glob porque los globs `.ts` se comportan distinto entre ts-node
+  (CLI) y el build compilado (`dist/*.js`).
+- El schema se declara en la entidad ORM y la migración solo lo
+  refleja. NO editar migraciones generadas a mano para agregar cosas
+  (FKs, constraints, índices): la entidad y la DB divergen y el
+  próximo `migration:generate` puede intentar revertir el cambio.
+  Excepción: el fix de `import type` en el import de `typeorm`.
+- Las FKs solo se generan si la entidad declara la relación
+  (`@ManyToOne` + `@JoinColumn`). Una columna `uuid` plana no alcanza,
+  aunque se llame `account_id`. Se mantiene además `accountId` como
+  columna plana para que el repo y el dominio no toquen la relación.
+- Una migración que ya corrió en cualquier ambiente es inmutable: los
+  cambios van en una migración nueva. Una migración generada que
+  todavía no corrió se puede borrar y regenerar.
+
 ## Variables de entorno
 
 - POSTGRES_HOST=localhost sirve para correr la app fuera de Docker.
@@ -37,3 +58,9 @@
 - docker-compose.yml solo trae Postgres por ahora. Redis se agrega
   recién en el slice de ConsultarSaldo (ADR-0003) — no antes, para no
   tener infra corriendo sin código que la use.
+
+## Moneda
+
+- Montos: siempre enteros en unidad mínima de la moneda (centavos para
+  USD). Los decimales en JS son flotantes binarios inexactos (0.1 + 0.2
+  !== 0.3) y un ledger tiene que cerrar al centavo.

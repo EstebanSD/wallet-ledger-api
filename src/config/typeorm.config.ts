@@ -1,5 +1,6 @@
 import { DataSourceOptions } from 'typeorm';
 import { AccountOrmEntity } from '../accounts/infrastructure/persistence/account.orm-entity';
+import { MovementOrmEntity } from '../movements/infrastructure/persistence/movement.orm-entity';
 
 // Una sola definición de conexión, importada tanto por app.module.ts (runtime)
 // como por data-source.ts (CLI de migraciones). Evita que las dos configs
@@ -12,7 +13,7 @@ export const typeOrmConfig: DataSourceOptions = {
   username: process.env.POSTGRES_USER ?? 'wallet_user',
   password: process.env.POSTGRES_PASSWORD ?? 'wallet_pass',
   database: process.env.POSTGRES_DB ?? 'wallet_ledger',
-  entities: [AccountOrmEntity],
+  entities: [AccountOrmEntity, MovementOrmEntity],
   migrations: ['src/migrations/*.ts'],
   // NUNCA true en este proyecto: ver el ADR de migraciones vs synchronize.
   synchronize: false,

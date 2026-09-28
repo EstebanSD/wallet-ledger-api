@@ -16,5 +16,6 @@ import { AccountOrmEntity } from './infrastructure/persistence/account.orm-entit
       useClass: TypeOrmAccountRepository,
     },
   ],
+  exports: [ACCOUNT_REPOSITORY],
 })
 export class AccountsModule {}
