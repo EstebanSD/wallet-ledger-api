@@ -9,17 +9,7 @@ import {
   MOVEMENT_REPOSITORY,
   type MovementRepositoryPort,
 } from '../ports/movement-repository.port';
-
-// Error de dominio, no de framework: el use case no conoce HttpException
-// ni nada de @nestjs/common relacionado a HTTP. El controller es quien
-// decide que esto se traduce a un 404 — el use case solo modela "esto
-// pasó en el dominio".
-export class AccountNotFoundError extends Error {
-  constructor(accountId: string) {
-    super(`Cuenta ${accountId} no encontrada`);
-    this.name = 'AccountNotFoundError';
-  }
-}
+import { AccountNotFoundError } from '../errors';
 
 export interface DepositInput {
   accountId: string;

@@ -64,3 +64,19 @@
 - Montos: siempre enteros en unidad mínima de la moneda (centavos para
   USD). Los decimales en JS son flotantes binarios inexactos (0.1 + 0.2
   !== 0.3) y un ledger tiene que cerrar al centavo.
+
+## Concurrencia en Retirar (invariante de saldo no negativo)
+
+- Estrategia: SELECT ... FOR UPDATE sobre la fila de la cuenta, dentro
+  de una transacción (LedgerUnitOfWork). Retiros concurrentes sobre la
+  MISMA cuenta se serializan; sobre cuentas distintas no hay contención.
+- Requiere el aislamiento default de Postgres (READ COMMITTED). Con
+  REPEATABLE READ el snapshot se toma antes de esperar el lock y el SUM
+  no vería el retiro previo. No cambiar el nivel sin reevaluar esto.
+- Los tests unitarios usan un fake en memoria que NO simula bloqueos:
+  prueban la lógica, no la garantía anti-carrera. Esa se verifica
+  con requests paralelos contra Postgres real.
+- SUM(integer) en Postgres devuelve bigint y `pg` lo entrega como
+  string: convertir con Number() (seguro, montos << MAX_SAFE_INTEGER).
+- Pendiente slice #4 (ADR-0003): Depositar y Retirar deben invalidar la
+  key de Redis DESPUÉS del commit.

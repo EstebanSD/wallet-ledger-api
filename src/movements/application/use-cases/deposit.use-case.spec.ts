@@ -1,8 +1,9 @@
 import { Account } from '../../../accounts/domain/entities/account.entity';
-import type { AccountRepositoryPort } from '../../../accounts/application/ports/account-repository.port';
+import { AccountRepositoryPort } from '../../../accounts/application/ports/account-repository.port';
 import { Movement } from '../../domain/entities/movement.entity';
-import type { MovementRepositoryPort } from '../ports/movement-repository.port';
-import { AccountNotFoundError, DepositUseCase } from './deposit.use-case';
+import { MovementRepositoryPort } from '../ports/movement-repository.port';
+import { AccountNotFoundError } from '../errors';
+import { DepositUseCase } from './deposit.use-case';
 
 class InMemoryAccountRepository implements AccountRepositoryPort {
   constructor(private readonly accounts: Account[] = []) {}

@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountsModule } from '../accounts/accounts.module';
-import { DepositUseCase } from './application/use-cases/deposit.use-case';
+import { LEDGER_UNIT_OF_WORK } from './application/ports/ledger-unit-of-work.port';
 import { MOVEMENT_REPOSITORY } from './application/ports/movement-repository.port';
-import { TypeOrmMovementRepository } from './infrastructure/persistence/typeorm-movement.repository';
+import { DepositUseCase } from './application/use-cases/deposit.use-case';
+import { WithdrawUseCase } from './application/use-cases/withdraw.use-case';
 import { MovementOrmEntity } from './infrastructure/persistence/movement.orm-entity';
+import { TypeOrmLedgerUnitOfWork } from './infrastructure/persistence/typeorm-ledger-unit-of-work';
+import { TypeOrmMovementRepository } from './infrastructure/persistence/typeorm-movement.repository';
 import { MovementController } from './presentation/movement.controller';
 
 @Module({
@@ -15,10 +18,9 @@ import { MovementController } from './presentation/movement.controller';
   controllers: [MovementController],
   providers: [
     DepositUseCase,
-    {
-      provide: MOVEMENT_REPOSITORY,
-      useClass: TypeOrmMovementRepository,
-    },
+    WithdrawUseCase,
+    { provide: MOVEMENT_REPOSITORY, useClass: TypeOrmMovementRepository },
+    { provide: LEDGER_UNIT_OF_WORK, useClass: TypeOrmLedgerUnitOfWork },
   ],
 })
 export class MovementsModule {}
