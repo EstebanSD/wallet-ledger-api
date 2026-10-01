@@ -9,6 +9,10 @@ import {
   MOVEMENT_REPOSITORY,
   type MovementRepositoryPort,
 } from '../ports/movement-repository.port';
+import {
+  BALANCE_CACHE,
+  type BalanceCachePort,
+} from '../ports/balance-cache.port';
 import { AccountNotFoundError } from '../errors';
 
 export interface DepositInput {
@@ -31,12 +35,12 @@ export class DepositUseCase {
     private readonly accountRepository: AccountRepositoryPort,
     @Inject(MOVEMENT_REPOSITORY)
     private readonly movementRepository: MovementRepositoryPort,
+    @Inject(BALANCE_CACHE)
+    private readonly cache: BalanceCachePort,
   ) {}
 
   async execute(input: DepositInput): Promise<DepositOutput> {
     // Invariante #3: todo movimiento referencia una cuenta existente.
-    // Este chequeo es para dar un error legible; la FK en la DB es la
-    // garantía real del invariante (ver migración).
     const account = await this.accountRepository.findById(input.accountId);
     if (!account) {
       throw new AccountNotFoundError(input.accountId);
@@ -50,7 +54,7 @@ export class DepositUseCase {
     });
 
     await this.movementRepository.save(movement);
-
+    await this.cache.invalidate(input.accountId); // post-commit, ADR-0003
     return {
       id: movement.id,
       accountId: movement.accountId,

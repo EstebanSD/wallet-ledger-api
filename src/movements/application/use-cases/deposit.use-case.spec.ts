@@ -2,6 +2,7 @@ import { Account } from '../../../accounts/domain/entities/account.entity';
 import { AccountRepositoryPort } from '../../../accounts/application/ports/account-repository.port';
 import { Movement } from '../../domain/entities/movement.entity';
 import { MovementRepositoryPort } from '../ports/movement-repository.port';
+import { BalanceCachePort } from '../ports/balance-cache.port';
 import { AccountNotFoundError } from '../errors';
 import { DepositUseCase } from './deposit.use-case';
 
@@ -23,18 +24,35 @@ class InMemoryMovementRepository implements MovementRepositoryPort {
   async save(movement: Movement): Promise<void> {
     this.saved.push(movement);
   }
+
+  async getBalance(): Promise<number> {
+    return this.saved.reduce((sum, m) => sum + m.amount, 0);
+  }
+}
+
+class FakeCache implements BalanceCachePort {
+  public readonly invalidated: string[] = [];
+  async get(): Promise<number | null> {
+    return null;
+  }
+  async set(): Promise<void> {}
+  async invalidate(accountId: string): Promise<void> {
+    this.invalidated.push(accountId);
+  }
 }
 
 describe('DepositUseCase', () => {
-  it('crea un movimiento CREDIT para una cuenta existente', async () => {
+  it('crea un movimiento CREDIT para una cuenta existente e invalida la cache', async () => {
     const account = Account.create({
       id: 'acc-1',
       ownerRef: 'user-123',
       currency: 'USD',
     });
+    const cache = new FakeCache();
     const useCase = new DepositUseCase(
       new InMemoryAccountRepository([account]),
       new InMemoryMovementRepository(),
+      cache,
     );
 
     const result = await useCase.execute({ accountId: 'acc-1', amount: 1500 });
@@ -42,12 +60,14 @@ describe('DepositUseCase', () => {
     expect(result.type).toBe('CREDIT');
     expect(result.amount).toBe(1500);
     expect(result.accountId).toBe('acc-1');
+    expect(cache.invalidated).toEqual(['acc-1']);
   });
 
   it('rechaza depositar en una cuenta inexistente', async () => {
     const useCase = new DepositUseCase(
       new InMemoryAccountRepository([]),
       new InMemoryMovementRepository(),
+      new FakeCache(),
     );
 
     await expect(
@@ -64,6 +84,7 @@ describe('DepositUseCase', () => {
     const useCase = new DepositUseCase(
       new InMemoryAccountRepository([account]),
       new InMemoryMovementRepository(),
+      new FakeCache(),
     );
 
     await expect(

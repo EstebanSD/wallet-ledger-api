@@ -19,19 +19,17 @@ services:
     # networks:
     #   - wallet_net
 
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: wallet_redis
-  #   restart: unless-stopped
-  #   ports:
-  #     - '${REDIS_PORT}:6379'
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ['CMD', 'redis-cli', 'ping']
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: wallet_redis
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
   #   networks:
   #     - wallet_net
 
@@ -83,5 +81,4 @@ services:
 
 volumes:
   pg_data:
-  # redis_data:
   # app_node_modules:

@@ -6,6 +6,10 @@ import {
   LEDGER_UNIT_OF_WORK,
   type LedgerUnitOfWork,
 } from '../ports/ledger-unit-of-work.port';
+import {
+  BALANCE_CACHE,
+  type BalanceCachePort,
+} from '../ports/balance-cache.port';
 
 export interface WithdrawInput {
   accountId: string;
@@ -25,10 +29,12 @@ export class WithdrawUseCase {
   constructor(
     @Inject(LEDGER_UNIT_OF_WORK)
     private readonly unitOfWork: LedgerUnitOfWork,
+    @Inject(BALANCE_CACHE)
+    private readonly cache: BalanceCachePort,
   ) {}
 
   async execute(input: WithdrawInput): Promise<WithdrawOutput> {
-    return this.unitOfWork.run(async (tx) => {
+    const result = await this.unitOfWork.run(async (tx) => {
       // 1. Bloquear la cuenta: desde acá hasta el commit, ningún otro
       //    retiro sobre esta cuenta puede leer el saldo.
       const account = await tx.lockAccount(input.accountId);
@@ -60,5 +66,9 @@ export class WithdrawUseCase {
         createdAt: movement.createdAt,
       };
     });
+
+    await this.cache.invalidate(input.accountId); // post-commit, ADR-0003
+
+    return result;
   }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -14,6 +15,7 @@ import {
 } from '../application/errors';
 import { DepositUseCase } from '../application/use-cases/deposit.use-case';
 import { WithdrawUseCase } from '../application/use-cases/withdraw.use-case';
+import { GetBalanceUseCase } from '../application/use-cases/get-balance.use-case';
 import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 
@@ -22,6 +24,7 @@ export class MovementController {
   constructor(
     private readonly depositUseCase: DepositUseCase,
     private readonly withdrawUseCase: WithdrawUseCase,
+    private readonly getBalanceUseCase: GetBalanceUseCase,
   ) {}
 
   @Post('deposits')
@@ -51,6 +54,15 @@ export class MovementController {
         accountId,
         amount: dto.amount,
       });
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
+  }
+
+  @Get('balance')
+  async getBalance(@Param('accountId') accountId: string) {
+    try {
+      return await this.getBalanceUseCase.execute({ accountId });
     } catch (error) {
       throw this.toHttpError(error);
     }

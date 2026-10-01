@@ -22,4 +22,16 @@ export class TypeOrmMovementRepository implements MovementRepositoryPort {
     });
     await this.repository.save(row);
   }
+
+  async getBalance(accountId: string): Promise<number> {
+    const rows = await this.repository.query(
+      `SELECT COALESCE(SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE -amount END), 0) AS balance
+       FROM movements
+       WHERE account_id = $1`,
+      [accountId],
+    );
+    // SUM(integer) en Postgres devuelve bigint, pg lo entrega como string.
+    // Seguro de convertir: los montos están muy por debajo de MAX_SAFE_INTEGER.
+    return Number(rows[0].balance);
+  }
 }
