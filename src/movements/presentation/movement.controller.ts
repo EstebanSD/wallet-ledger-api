@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
@@ -16,7 +17,9 @@ import {
 import { DepositUseCase } from '../application/use-cases/deposit.use-case';
 import { WithdrawUseCase } from '../application/use-cases/withdraw.use-case';
 import { GetBalanceUseCase } from '../application/use-cases/get-balance.use-case';
+import { ListMovementsUseCase } from '../application/use-cases/list-movements.use-case';
 import { DepositDto } from './dto/deposit.dto';
+import { ListMovementsQueryDto } from './dto/list-movements-query.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 
 @Controller('accounts/:accountId')
@@ -25,6 +28,7 @@ export class MovementController {
     private readonly depositUseCase: DepositUseCase,
     private readonly withdrawUseCase: WithdrawUseCase,
     private readonly getBalanceUseCase: GetBalanceUseCase,
+    private readonly listMovementsUseCase: ListMovementsUseCase,
   ) {}
 
   @Post('deposits')
@@ -63,6 +67,25 @@ export class MovementController {
   async getBalance(@Param('accountId') accountId: string) {
     try {
       return await this.getBalanceUseCase.execute({ accountId });
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
+  }
+
+  @Get('movements')
+  async listMovements(
+    @Param('accountId') accountId: string,
+    @Query() query: ListMovementsQueryDto,
+  ) {
+    try {
+      return await this.listMovementsUseCase.execute({
+        accountId,
+        type: query.type,
+        from: query.from,
+        to: query.to,
+        page: query.page,
+        limit: query.limit,
+      });
     } catch (error) {
       throw this.toHttpError(error);
     }

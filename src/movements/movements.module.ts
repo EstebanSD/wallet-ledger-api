@@ -7,6 +7,7 @@ import { BALANCE_CACHE } from './application/ports/balance-cache.port';
 import { DepositUseCase } from './application/use-cases/deposit.use-case';
 import { WithdrawUseCase } from './application/use-cases/withdraw.use-case';
 import { GetBalanceUseCase } from './application/use-cases/get-balance.use-case';
+import { ListMovementsUseCase } from './application/use-cases/list-movements.use-case';
 import { MovementOrmEntity } from './infrastructure/persistence/movement.orm-entity';
 import { TypeOrmLedgerUnitOfWork } from './infrastructure/persistence/typeorm-ledger-unit-of-work';
 import { TypeOrmMovementRepository } from './infrastructure/persistence/typeorm-movement.repository';
@@ -24,6 +25,7 @@ import { MovementController } from './presentation/movement.controller';
     DepositUseCase,
     WithdrawUseCase,
     GetBalanceUseCase,
+    ListMovementsUseCase,
     { provide: MOVEMENT_REPOSITORY, useClass: TypeOrmMovementRepository },
     { provide: LEDGER_UNIT_OF_WORK, useClass: TypeOrmLedgerUnitOfWork },
     redisClientProvider,

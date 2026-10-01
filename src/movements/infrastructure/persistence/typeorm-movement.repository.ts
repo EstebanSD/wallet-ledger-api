@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Movement } from '../../domain/entities/movement.entity';
-import { MovementRepositoryPort } from '../../application/ports/movement-repository.port';
+import {
+  MovementListFilters,
+  MovementRepositoryPort,
+  PaginatedMovements,
+  Pagination,
+} from '../../application/ports/movement-repository.port';
 import { MovementOrmEntity } from './movement.orm-entity';
 
 @Injectable()
@@ -33,5 +38,43 @@ export class TypeOrmMovementRepository implements MovementRepositoryPort {
     // SUM(integer) en Postgres devuelve bigint, pg lo entrega como string.
     // Seguro de convertir: los montos están muy por debajo de MAX_SAFE_INTEGER.
     return Number(rows[0].balance);
+  }
+
+  async findByAccount(
+    accountId: string,
+    filters: MovementListFilters,
+    pagination: Pagination,
+  ): Promise<PaginatedMovements> {
+    const qb = this.repository
+      .createQueryBuilder('movement')
+      .where('movement.account_id = :accountId', { accountId });
+
+    if (filters.type) {
+      qb.andWhere('movement.type = :type', { type: filters.type });
+    }
+    if (filters.from) {
+      qb.andWhere('movement.created_at >= :from', { from: filters.from });
+    }
+    if (filters.to) {
+      qb.andWhere('movement.created_at <= :to', { to: filters.to });
+    }
+
+    const [rows, total] = await qb
+      .orderBy('movement.created_at', 'DESC')
+      .skip((pagination.page - 1) * pagination.limit)
+      .take(pagination.limit)
+      .getManyAndCount();
+
+    const items = rows.map((row) =>
+      Movement.reconstitute({
+        id: row.id,
+        accountId: row.accountId,
+        type: row.type,
+        amount: row.amount,
+        createdAt: row.createdAt,
+      }),
+    );
+
+    return { items, total };
   }
 }
