@@ -1,21 +1,24 @@
-# Imagen de desarrollo. No es la imagen de producción (esa se define
-# cuando el proyecto llegue a esa etapa — multi-stage build con
-# `nest build` + `node dist/main` y sin devDependencies).
-# FROM node:20-alpine
+# ---- build ----
+FROM node:24-alpine AS builder
 
-# WORKDIR /usr/src/app
+WORKDIR /usr/src/app
 
-# Copiamos solo los manifests primero para aprovechar la cache de capas
-# de Docker: si no cambian package.json/lock, no se re-corre npm install
-# aunque cambie el código fuente.
-# COPY package*.json ./
+COPY package*.json ./
+RUN npm ci
 
-# RUN npm install
+COPY . .
+RUN npm run build
 
-# El resto del código llega por bind mount en docker-compose (volumes),
-# así que este COPY solo importa para builds que no usan el compose.
-# COPY . .
+# ---- runtime ----
+FROM node:24-alpine
 
-# EXPOSE 3000
+WORKDIR /usr/src/app
 
-# CMD ["npm", "run", "start:dev"]
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /usr/src/app/dist ./dist
+
+EXPOSE 3000
+
+CMD ["node", "dist/main"]

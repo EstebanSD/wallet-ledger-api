@@ -30,50 +30,43 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-  #   networks:
-  #     - wallet_net
+    #   networks:
+    #     - wallet_net
 
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: wallet_app
-  #   restart: unless-stopped
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - '${APP_PORT}:3000'
-  #   volumes:
-  #     # Bind mount para live reload en dev. node_modules queda en un volumen
-  #     # propio del contenedor para no pisarlo con el node_modules del host
-  #     # (que puede tener binarios compilados para otro OS/arch).
-  #     - ./:/usr/src/app
-  #     - app_node_modules:/usr/src/app/node_modules
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     # TODO (Fase 4): reemplazar por GET /health dedicado cuando se defina
-  #     # si ese endpoint valida solo liveness (proceso vivo) o también
-  #     # dependencias externas (Postgres/Redis). Por ahora usamos el "/"
-  #     # default de `nest new`, que no requiere escribir código de negocio.
-  #     test:
-  #       [
-  #         'CMD',
-  #         'wget',
-  #         '--quiet',
-  #         '--tries=1',
-  #         '--spider',
-  #         'http://localhost:3000/',
-  #       ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 15s
-  #   networks:
-  #     - wallet_net
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wallet_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    ports:
+      - '${APP_PORT}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--quiet',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3000/',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    # networks:
+    #   - wallet_net
 
 # networks:
 #   wallet_net:
@@ -81,4 +74,3 @@ services:
 
 volumes:
   pg_data:
-  # app_node_modules:
